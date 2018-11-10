@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 # FIXED PARAMETERS
 #####
-CSV_PATH = '/media/desktop/SP PHD U3/Diabetic_Kaggle/trainLabels.csv'
-IMAGES_PATH = '/media/desktop/SP PHD U3/Diabetic_Kaggle/train'
+CSV_PATH = '/home/desktop/Desktop/Diabetic_Kaggle/trainLabels.csv'
+IMAGES_PATH = '/home/desktop/Desktop/Diabetic_Kaggle/train'
 #####
 
 
@@ -87,6 +87,7 @@ if __name__ == "__main__":
         image = crop_image(image)
         image = preprocess_image(image, 256)
         image = resize(image, 256)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # add image to the list
         images.append(image)
         labels.append(int(label))
