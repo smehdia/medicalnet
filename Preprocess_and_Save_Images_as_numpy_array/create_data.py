@@ -77,8 +77,6 @@ if __name__ == "__main__":
     # get images list
     list_images = glob.glob(IMAGES_PATH + '/*')
     for i, line in enumerate(contents):
-        if i>100:
-            break
         # read image
         image_name = line.split(',')[0]
         label = line.split(',')[1].strip()
