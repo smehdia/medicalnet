@@ -5,6 +5,7 @@ import glob
 import matplotlib.pyplot as plt
 import re
 import random
+from tqdm import tqdm
 
 # FIXED PARAMETERS
 #####
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     total_contents = len(contents)
     # get images list
     list_images = glob.glob(IMAGES_PATH + '/*')
-    for i, line in enumerate(contents):
+    for line in tqdm(contents):
         # read image
         image_name = line.split(',')[0]
         label = line.split(',')[1].strip()
@@ -89,7 +90,6 @@ if __name__ == "__main__":
         # add image to the list
         images.append(image)
         labels.append(int(label))
-        print "Number of Saved Images: {} / {} ".format(i, total_contents)
 
     # convert lists to numpy array
     images = np.array(images)
