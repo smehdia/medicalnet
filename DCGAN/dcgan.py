@@ -19,7 +19,7 @@ IMG_SIZE = 256
 BATCH_SIZE = 16
 EPOCHS = 200000
 SAMPLE_INTERVAL = 50
-IMAGES_NUMPY_ARRAY_PATH = 'images.npy'
+IMAGES_NUMPY_ARRAY_PATH = 'images_1.npy'
 # Initialize discriminator and generator loss to save them after each iteration
 discriminator_loss = []
 generator_loss = []
@@ -120,7 +120,7 @@ class DCGAN():
         # Load the dataset for the DCGAN
         images = np.load(IMAGES_NUMPY_ARRAY_PATH)
         # Reshape them properly to feed them to the DCGAN
-        images = images.reshape([-1, IMAGE_SIZE, IMAGE_SIZE, self.channels])
+        images = images.reshape([-1, IMG_SIZE, IMG_SIZE, self.channels])
         X_train = images.astype('float32')
         # Rescale Inputs between -1 and 1
         X_train = (X_train - 127.5) / 127.5
@@ -155,8 +155,7 @@ class DCGAN():
             plt.plot(generator_loss)
             plt.savefig('Loss.png')
             plt.close()
-            # save generator
-            self.generator.save('generator.h5')
+
             # Print the progress
             print ("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
             # If at save interval => save generated image samples
@@ -164,10 +163,12 @@ class DCGAN():
                 self.save_imgs(epoch)
 
     def save_imgs(self, epoch):
+	# save generator
+	self.generator.save('generator.h5')
         # generate sample fake images with model
         r, c = 3, 3
         noise = np.random.normal(0, 1, (r * c, self.latent_dim))
-        gen_imgs = model.predict(noise)
+        gen_imgs = self.generator.predict(noise)
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
         # plot fake images
