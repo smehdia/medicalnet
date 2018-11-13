@@ -19,7 +19,8 @@ IMG_SIZE = 256
 BATCH_SIZE = 16
 EPOCHS = 200000
 SAMPLE_INTERVAL = 50
-IMAGES_NUMPY_ARRAY_PATH = 'images_1.npy'
+CLASS = 4
+IMAGES_NUMPY_ARRAY_PATH = '../Preprocess_and_Save_Images_as_numpy_array/images_{}.npy'.format(CLASS)
 # Initialize discriminator and generator loss to save them after each iteration
 discriminator_loss = []
 generator_loss = []
