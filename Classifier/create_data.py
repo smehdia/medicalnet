@@ -4,6 +4,7 @@ import os
 from sklearn.model_selection import train_test_split
 import h5py
 import cv2
+from keras.models import load_model
 
 # FIXED PARAMETERS
 IMG_SIZE = 256
@@ -35,7 +36,6 @@ def append_data_to_h5(dataset_dir, X, y):
         dataset_images.resize((len_dataset_before_expansion+y.shape[0], 1))
         dataset_images[len_dataset_before_expansion:dataset_images.len()] = y
 
-
     return
 
 
@@ -66,6 +66,28 @@ def prepare_dataset(directory):
 
     return number_of_data_in_each_class
 
+def balance_classes(number_of_data_in_each_class):
+    # balancing data using GAN models
+    # get class which contains maximum number of data
+    maximum_class = number_of_data_in_each_class.index(max(number_of_data_in_each_class))
+    for i in [x for x in range(len(number_of_data_in_each_class)) if x!=maximum_class]:
+        # loading gan model
+        gan_model = load_model('../DCGAN/Class{}/generator_class{}.h5'.format(i, i))
+        # get number of data should be generated
+        number_added_data_in_class = max(number_of_data_in_each_class) - number_of_data_in_each_class[i]
+        # create random gaussian noise as the input of the gan model (Latent Dimension is 100)
+        noise = np.random.normal(0, 1, (number_added_data_in_class, 100))
+        print('Appending {} Fake Images from the Class {}...'.format(number_added_data_in_class, i))
+        # convert generated images to 0-255
+        generated_images = 255 * (gan_model.predict(noise) * 0.5 + 0.5)
+        generated_images = generated_images.astype('uint8')
+        # create labels for them according to their class
+        targets = i * np.ones(shape=(generated_images.shape[0], 1), dtype='int32')
+        # append data to the h5 dataset
+        append_data_to_h5(H5_DATASET_DIRECTORY, generated_images, targets)
+
+
+
 
 if __name__ == "__main__":
 
@@ -76,6 +98,7 @@ if __name__ == "__main__":
     number_of_data_in_each_class = prepare_dataset(DATA_DIRECTORY)
     print('Number of Data in Each Class:')
     print(number_of_data_in_each_class)
+    balance_classes(number_of_data_in_each_class)
 
 
 
