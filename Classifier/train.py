@@ -4,20 +4,25 @@ from keras.utils import multi_gpu_model, plot_model
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input, RepeatVector, Reshape, concatenate
 from keras.models import Model
 from keras.optimizers import Adam
-import cv2
-from keras.utils import to_categorical, HDF5Matrix
+from keras.callbacks import ModelCheckpoint, TensorBoard, Callback
+from keras.utils import to_categorical
+from sklearn.metrics import roc_auc_score, f1_score, cohen_kappa_score, confusion_matrix, precision_score, recall_score
+import matplotlib.pyplot as plt
 import random
+import os
 import h5py
+
 # FIXED PARAMETERS
 IMG_SIZE = 256
 NUM_CHANNELS = 1
 NUM_GPUs = 1
 NUM_CLASSES = 5
-TOTAL_DATA_NUMBER = len(h5py.File('data/dataset_train.hdf5', 'r')['images'])
 
 # TRAINING PARAMETERS
 LEARNING_RATE = 1e-3
 BATCH_SIZE = 64
+EPOCHS = 100
+TOTAL_DATA_NUMBER = len(h5py.File('data/dataset_train.hdf5', 'r')['images'])
 
 
 def get_model():
@@ -114,6 +119,64 @@ def training_data_generator():
             yield images, {'out1':targets_net1, 'out2':targets_net2}
 
 
+
+
+class Metrics(Callback):
+    def on_train_begin(self, logs={}):
+        self.confusion = []
+        self.precision = []
+        self.recall = []
+        self.f1s = []
+        self.kappa = []
+        self.auc = []
+        # create directory for saving data
+        if os.path.isdir('figures') is not True:
+            os.mkdir('figures')
+
+    def on_epoch_begin(self, epoch, logs={}):
+
+        score = np.asarray(self.model.predict(self.validation_data[0])[1])
+        integer_prediction = np.argmax(score, axis=1)
+        one_hot_targets = self.validation_data[2]
+        integer_targets = [np.where(r == 1)[0][0] for r in one_hot_targets]
+
+        # calculate metrics
+        self.auc.append(roc_auc_score(one_hot_targets, score))
+        self.confusion.append(confusion_matrix(integer_targets, integer_prediction))
+        self.precision.append(precision_score(integer_targets, integer_prediction, average='micro'))
+        self.recall.append(recall_score(integer_targets, integer_prediction, average='micro'))
+        self.f1s.append(f1_score(integer_targets, integer_prediction, average='micro'))
+        self.kappa.append(cohen_kappa_score(integer_targets, integer_prediction))
+        # save and plot metrics
+        plt.plot(self.auc)
+        plt.xlabel('Epochs')
+        plt.title('AUC for Validation Data')
+        plt.savefig('figures/auc.png')
+        plt.close()
+        plt.plot(self.precision)
+        plt.xlabel('Epochs')
+        plt.title('Precision for Validation Data')
+        plt.savefig('figures/precision.png')
+        plt.close()
+        plt.plot(self.recall)
+        plt.xlabel('Epochs')
+        plt.title('Recall for Validation Data')
+        plt.savefig('figures/recall.png')
+        plt.close()
+        plt.plot(self.kappa)
+        plt.xlabel('Epochs')
+        plt.title('Kappa for Validation Data')
+        plt.savefig('figures/Kappa.png')
+        plt.close()
+        plt.plot(self.f1s)
+        plt.xlabel('Epochs')
+        plt.title('F1 Score for Validation Data')
+        plt.savefig('figures/f1.png')
+        plt.close()
+
+
+        return
+
 if __name__ == "__main__":
     # define CNNs
     model = get_model()
@@ -123,8 +186,16 @@ if __name__ == "__main__":
                   metrics={'out1': 'binary_accuracy', 'out2': 'categorical_accuracy'})
     # get validation data
     X_validation, y_validation_net1, y_validation_net2 = prepare_validation_data()
+    # define callbacks
+    # tensorboard callback for saving loss
+    tbCallBack = TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=False)
+    # model checkpointer callback to save model
+    checkpointer = ModelCheckpoint(filepath='model.hdf5', verbose=1, save_best_only=True)
+    # Kappa score and ... Callback
+    metrics = Metrics()
     # train the network
-    model.fit_generator(training_data_generator(), validation_data=(X_validation, {'out1': y_validation_net1, 'out2': y_validation_net2}), steps_per_epoch=TOTAL_DATA_NUMBER//BATCH_SIZE, nb_epoch=2, verbose=1, nb_worker=1)
+    model.fit_generator(training_data_generator(), validation_data=(X_validation, {'out1': y_validation_net1, 'out2': y_validation_net2}), steps_per_epoch=TOTAL_DATA_NUMBER//(200*BATCH_SIZE), nb_epoch=EPOCHS, verbose=1, nb_worker=1, callbacks=[checkpointer, tbCallBack, metrics])
+
 
 
 
