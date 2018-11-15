@@ -164,8 +164,8 @@ class DCGAN():
                 self.save_imgs(epoch)
 
     def save_imgs(self, epoch):
-	# save generator
-	self.generator.save('generator.h5')
+        # save generator
+        self.generator.save('generator_class{}.h5'.format(CLASS))
         # generate sample fake images with model
         r, c = 3, 3
         noise = np.random.normal(0, 1, (r * c, self.latent_dim))
