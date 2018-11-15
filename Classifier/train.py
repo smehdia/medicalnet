@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # Kappa score and ... Callback
     metrics = Metrics()
     # train the network
-    model.fit_generator(training_data_generator(), validation_data=(X_validation, {'out1': y_validation_net1, 'out2': y_validation_net2}), steps_per_epoch=TOTAL_DATA_NUMBER//(200*BATCH_SIZE), nb_epoch=EPOCHS, verbose=1, nb_worker=1, callbacks=[checkpointer, tbCallBack, metrics])
+    model.fit_generator(training_data_generator(), validation_data=(X_validation, {'out1': y_validation_net1, 'out2': y_validation_net2}), steps_per_epoch=TOTAL_DATA_NUMBER//(BATCH_SIZE), nb_epoch=EPOCHS, verbose=1, nb_worker=1, callbacks=[checkpointer, tbCallBack, metrics])
 
 
 
