@@ -27,33 +27,26 @@ TOTAL_DATA_NUMBER = len(h5py.File('data/dataset_train.hdf5', 'r')['images'])
 
 def get_model():
     model_input1 = Input(shape=(IMG_SIZE, IMG_SIZE, NUM_CHANNELS))
-    cnn1 = Conv2D(16, (3, 3),
+    main_branch = Conv2D(16, (3, 3),
                   activation='relu', padding='valid')(model_input1)
-    cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
-    cnn1 = Conv2D(32, (3, 3), activation='relu')(cnn1)
-    cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
-    cnn1 = Conv2D(64, (3, 3),
-                  activation='relu', padding='valid')(cnn1)
-    cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
-    cnn1 = Conv2D(128, (3, 3), activation='relu')(cnn1)
+    main_branch = MaxPooling2D(pool_size=(2, 2))(main_branch)
+    main_branch = Conv2D(32, (3, 3), activation='relu')(main_branch)
+    main_branch = MaxPooling2D(pool_size=(2, 2))(main_branch)
+    main_branch = Conv2D(64, (3, 3),
+                  activation='relu', padding='valid')(main_branch)
+
+    cnn1 = Conv2D(128, (3, 3), activation='relu')(main_branch)
     cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
     cnn1 = Conv2D(256, (3, 3), activation='relu')(cnn1)
     cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
     cnn1 = Flatten()(cnn1)
     cnn1 = Dropout(0.5)(cnn1)
     cnn1 = Dense(1, activation='sigmoid', name='out1')(cnn1)
-    model_input2 = RepeatVector(IMG_SIZE * IMG_SIZE)(cnn1)
-    model_input2 = Reshape((IMG_SIZE, IMG_SIZE, 1))(model_input2)
-    model_input2 = concatenate([model_input1, model_input2], axis=3)
+    model_input2 = RepeatVector(60 * 60)(cnn1)
+    model_input2 = Reshape((60, 60, 1))(model_input2)
+    model_input2 = concatenate([main_branch, model_input2], axis=3)
     cnn2 = Conv2D(16, (3, 3),
                   activation='relu', padding='valid')(model_input2)
-    cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
-    cnn2 = Conv2D(32, (3, 3), activation='relu')(cnn2)
-    cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
-    cnn2 = Conv2D(64, (3, 3),
-                  activation='relu', padding='valid')(cnn2)
-    cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
-    cnn2 = Conv2D(128, (3, 3), activation='relu')(cnn2)
     cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
     cnn2 = Conv2D(256, (3, 3), activation='relu')(cnn2)
     cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
