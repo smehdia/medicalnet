@@ -35,30 +35,22 @@ def get_model():
     main_branch = Conv2D(64, (3, 3),
                   activation='relu', padding='valid')(main_branch)
 
-    cnn1 = Conv2D(128, (3, 3), activation='relu')(main_branch)
-    cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
-    cnn1 = Conv2D(256, (3, 3), activation='relu')(cnn1)
-    cnn1 = MaxPooling2D(pool_size=(2, 2))(cnn1)
-    cnn1 = Flatten()(cnn1)
-    cnn1 = Dropout(0.5)(cnn1)
-    cnn1 = Dense(1, activation='sigmoid', name='out1')(cnn1)
-    model_input2 = RepeatVector(60 * 60)(cnn1)
-    model_input2 = Reshape((60, 60, 1))(model_input2)
-    model_input2 = concatenate([main_branch, model_input2], axis=3)
-    cnn2 = Conv2D(16, (3, 3),
-                  activation='relu', padding='valid')(model_input2)
+    cnn2 = Conv2D(128, (3, 3),
+                  activation='relu', padding='valid')(main_branch)
     cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
-    cnn2 = Conv2D(256, (3, 3), activation='relu')(cnn2)
+    cnn2 = Conv2D(128, (3, 3), activation='relu')(cnn2)
+    cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
+    cnn2 = Conv2D(128, (3, 3), activation='relu')(cnn2)
     cnn2 = MaxPooling2D(pool_size=(2, 2))(cnn2)
     cnn2 = Flatten()(cnn2)
     cnn2 = Dropout(0.5)(cnn2)
-    cnn2 = Dense(32, activation='relu')(cnn2)
+    cnn2 = Dense(128, activation='relu')(cnn2)
     cnn2 = Dense(5, activation='softmax', name='out2')(cnn2)
 
     if NUM_GPUs <= 1:
-        model = Model(inputs=[model_input1], outputs=[cnn1, cnn2])
+        model = Model(inputs=[model_input1], outputs=[cnn2])
     else:
-        model = multi_gpu_model(Model(inputs=[model_input1], outputs=[cnn1, cnn2]), gpus=NUM_GPUs)
+        model = multi_gpu_model(Model(inputs=[model_input1], outputs=[cnn2]), gpus=NUM_GPUs)
 
     plot_model(model, to_file='model.png', show_layer_names=True, show_shapes=True)
     model.summary()
@@ -91,7 +83,7 @@ def prepare_validation_data():
     y_validation_net1 = np.array(y_validation_net1).astype('float32').reshape([-1, 1])
     y_validation_net2 = np.array(y_validation_net2).astype('float32').reshape([-1, NUM_CLASSES])
 
-    return X_validation, y_validation_net1, y_validation_net2
+    return X_validation, y_validation_net2
 
 def training_data_generator():
     while 1:
@@ -109,7 +101,7 @@ def training_data_generator():
             targets_net1[targets_net1 == 4] = 1
             targets_net2 = to_categorical(labels, num_classes=5)
 
-            yield images, {'out1':targets_net1, 'out2':targets_net2}
+            yield images, targets_net2
 
 
 
@@ -128,9 +120,9 @@ class Metrics(Callback):
 
     def on_epoch_begin(self, epoch, logs={}):
 
-        score = np.asarray(self.model.predict(self.validation_data[0])[1])
+        score = np.asarray(self.model.predict(self.validation_data[0]))
         integer_prediction = np.argmax(score, axis=1)
-        one_hot_targets = self.validation_data[2]
+        one_hot_targets = self.validation_data[1]
         integer_targets = [np.where(r == 1)[0][0] for r in one_hot_targets]
 
         # calculate metrics
@@ -175,10 +167,10 @@ if __name__ == "__main__":
     model = get_model()
     # compile model and defining loss function and accuracies
     model.compile(optimizer=Adam(LEARNING_RATE),
-                  loss={'out1': 'binary_crossentropy', 'out2': 'categorical_crossentropy'},
-                  metrics={'out1': 'binary_accuracy', 'out2': 'categorical_accuracy'})
+                  loss='categorical_crossentropy',
+                  metrics=['categorical_accuracy'])
     # get validation data
-    X_validation, y_validation_net1, y_validation_net2 = prepare_validation_data()
+    X_validation, y_validation_net2 = prepare_validation_data()
     # define callbacks
     # tensorboard callback for saving loss
     tbCallBack = TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=False)
@@ -187,7 +179,7 @@ if __name__ == "__main__":
     # Kappa score and ... Callback
     metrics = Metrics()
     # train the network
-    model.fit_generator(training_data_generator(), validation_data=(X_validation, {'out1': y_validation_net1, 'out2': y_validation_net2}), steps_per_epoch=TOTAL_DATA_NUMBER//(BATCH_SIZE), nb_epoch=EPOCHS, verbose=1, nb_worker=1, callbacks=[checkpointer, tbCallBack, metrics])
+    model.fit_generator(training_data_generator(), validation_data=(X_validation, y_validation_net2), steps_per_epoch=TOTAL_DATA_NUMBER//(BATCH_SIZE), nb_epoch=EPOCHS, verbose=1, nb_worker=1, callbacks=[checkpointer, tbCallBack, metrics])
 
 
 
