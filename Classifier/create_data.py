@@ -15,6 +15,7 @@ TRAINVAL_TEST_SPLIT_RATIO = 0.2
 TRAIN_VAL_SPLIT_RATIO = 0.2
 DATA_DIRECTORY = '../Preprocess_and_Save_Images_as_numpy_array'
 H5_DATASET_DIRECTORY = 'data/dataset_train.hdf5'
+USING_FAKE_IMAGES_FLAG = False
 
 def initialize_h5():
     # create h5 dataset files in data directory
@@ -98,7 +99,8 @@ if __name__ == "__main__":
     number_of_data_in_each_class = prepare_dataset(DATA_DIRECTORY)
     print('Number of Data in Each Class:')
     print(number_of_data_in_each_class)
-    balance_classes(number_of_data_in_each_class)
+    if USING_FAKE_IMAGES_FLAG:
+        balance_classes(number_of_data_in_each_class)
 
 
 
