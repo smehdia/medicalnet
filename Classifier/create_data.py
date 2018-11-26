@@ -15,7 +15,7 @@ TRAINVAL_TEST_SPLIT_RATIO = 0.2
 TRAIN_VAL_SPLIT_RATIO = 0.2
 DATA_DIRECTORY = '../Preprocess_and_Save_Images_as_numpy_array'
 H5_DATASET_DIRECTORY = 'data/dataset_train.hdf5'
-USING_FAKE_IMAGES_FLAG = False
+USING_FAKE_IMAGES_FLAG = True
 
 def initialize_h5():
     # create h5 dataset files in data directory
@@ -51,6 +51,7 @@ def prepare_dataset(directory):
         # load numpy array and reshape it
         images = np.load(directory + '/images_{}.npy'.format(i)).reshape([-1, IMG_SIZE, IMG_SIZE, NUM_CHANNELS])
         targets = i*np.ones(shape=(images.shape[0], 1), dtype='int32')
+
         # split data of the class to train and test
         X_tv, X_test, y_tv, _ = train_test_split(images, targets,
                                                             test_size=TRAINVAL_TEST_SPLIT_RATIO, random_state=42)
